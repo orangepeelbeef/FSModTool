@@ -207,7 +207,7 @@ CONFIG(release, debug|release):win32 {
     DEPLOY_CMD = $$shell_quote($$shell_path($$[QT_INSTALL_BINS]/windeployqt.exe)) --compiler-runtime $$shell_quote($$shell_path($$DIST_PATH))
     ZIP_CMD = cd /d $$shell_quote($$shell_path($$DIST_DIR)) && tar -a -cf $$shell_quote($$shell_path($$PACKAGE_FILE)) *
 
-    QMAKE_POST_LINK += $$CLEAN_CMD && $$MKDIR_CMD && $$COPY_CMD && $$DEPLOY_CMD && $$ZIP_CMD
+    QMAKE_POST_LINK = $$CLEAN_CMD && $$MKDIR_CMD && $$COPY_CMD && $$DEPLOY_CMD && $$ZIP_CMD
 }
 
 CONFIG(release, debug|release):macx {
@@ -223,7 +223,7 @@ CONFIG(release, debug|release):macx {
     DEPLOY_CMD = $$shell_quote($$shell_path($$[QT_INSTALL_BINS]/macdeployqt)) $$shell_quote($$shell_path($$DIST_PATH))
     ZIP_CMD = cd $$shell_quote($$shell_path($$DIST_DIR)) && zip -r -y $$shell_quote($$shell_path($$PACKAGE_FILE)) .
 
-    QMAKE_POST_LINK += $$CLEAN_CMD && $$MKDIR_CMD && $$COPY_CMD && $$DEPLOY_CMD && $$ZIP_CMD
+    QMAKE_POST_LINK = $$CLEAN_CMD && $$MKDIR_CMD && $$COPY_CMD && $$DEPLOY_CMD && $$ZIP_CMD
 }
 
 CONFIG(release, debug|release):unix:!macx:!android {
@@ -235,5 +235,5 @@ CONFIG(release, debug|release):unix:!macx:!android {
     COPY_CMD = cp $$shell_quote($$shell_path($$OUT_PWD/$$TARGET)) $$shell_quote($$shell_path($$DIST_DIR/))
     TAR_CMD = cd $$shell_quote($$shell_path($$DIST_DIR)) && tar -czf $$shell_quote($$shell_path($$PACKAGE_FILE)) *
 
-    QMAKE_POST_LINK += $$CLEAN_CMD && $$MKDIR_CMD && $$COPY_CMD && $$TAR_CMD
+    QMAKE_POST_LINK = $$CLEAN_CMD && $$MKDIR_CMD && $$COPY_CMD && $$TAR_CMD
 }

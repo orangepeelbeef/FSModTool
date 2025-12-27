@@ -64,7 +64,7 @@ jobs:
       - name: Package Windows (win64)
         if: runner.os == 'Windows'
         shell: bash
-        run: mv FSModTool_Release.zip FSModTool-${{ github.ref_name }}-windows-x86_64.zip
+        run: mv build_assets/FSModTool_Release.zip FSModTool-${{ github.ref_name }}-windows-x86_64.zip
 
       - name: Package Linux (lin64 & AppImage)
         if: runner.os == 'Linux'
@@ -73,7 +73,7 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
           sudo apt-get update && sudo apt-get install -y libxcb-util1 zip imagemagick
-          mv FSModTool_Release.tar.gz FSModTool-${{ github.ref_name }}-linux-x86_64.tar.gz
+          mv build_assets/FSModTool_Release.tar.gz FSModTool-${{ github.ref_name }}-linux-x86_64.tar.gz
           #AppImage
           convert KFModTool.ico[0] build_assets/FSModTool.png
           wget -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
@@ -83,13 +83,13 @@ jobs:
           export VERSION=${{ github.ref_name }}
           ../linuxdeployqt-continuous-x86_64.AppImage FSModTool -appimage -unsupported-allow-new-glibc
           cd ..
-          mv FSModTool-*-x86_64.AppImage FSModTool-${{ github.ref_name }}-x86_64.AppImage
+          mv build_assets/FSModTool-*-x86_64.AppImage FSModTool-${{ github.ref_name }}-x86_64.AppImage
           zip FSModTool-${{ github.ref_name }}-x86_64-AppImage.zip FSModTool-${{ github.ref_name }}-x86_64.AppImage
 
       - name: Package macOS (mac64)
         if: runner.os == 'macOS'
         shell: bash
-        run: mv FSModTool_Release.zip FSModTool-${{ github.ref_name }}-macos-x86_64.zip
+        run: mv build_assets/FSModTool_Release.zip FSModTool-${{ github.ref_name }}-macos-x86_64.zip
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

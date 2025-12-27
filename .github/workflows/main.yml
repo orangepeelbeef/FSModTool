@@ -18,7 +18,7 @@ jobs:
         include:
           - os: windows-latest
             qt_arch: win64_mingw81
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             qt_arch: gcc_64
           - os: macos-latest
             qt_arch: clang_64
@@ -32,23 +32,31 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
+          aqtversion: '==3.1.*'
           version: '5.15.2'
+          tools: ${{ runner.os == 'Windows' && 'tools_ming81' || '' }}
           arch: ${{ matrix.qt_arch }}
+          modules: 'qtquick3d'
 
-      - name: Set up MinGW (Windows)
+      - name: Build Project (Windows)
         if: runner.os == 'Windows'
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
+        shell: cmd
+        run: |
+          mkdir build_assets
+          cd build_assets
+          set PATH=%Qt5_Dir%\..\..\..\Tools\mingw810_64\bin;%PATH%
+          qmake ..\FSModTool.pro CONFIG+=release
+          mingw32-make -j2
 
-      - name: Build Project
+      - name: Build Project (Unix)
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           mkdir build_assets
           cd build_assets
           qmake ../FSModTool.pro CONFIG+=release
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            mingw32-make -j$(nproc)
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            make -j$(sysctl -n hw.ncpu)
           else
             make -j$(nproc)
           fi
@@ -56,36 +64,39 @@ jobs:
       - name: Package Windows (win64)
         if: runner.os == 'Windows'
         shell: bash
-        # github.ref_name will be "r140"
-        run: mv *_Release.zip FSModTool-${{ github.ref_name }}-windows-x86_64.zip
+        run: mv FSModTool_Release.zip FSModTool-${{ github.ref_name }}-windows-x86_64.zip
 
       - name: Package Linux (lin64 & AppImage)
         if: runner.os == 'Linux'
         shell: bash
+        env: 
+          APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          sudo apt-get update && sudo apt-get install -y libxcb-util1 zip
-          zip -j FSModTool-${{ github.ref_name }}-linux-x86_64.zip build_assets/FSModTool
-          
+          sudo apt-get update && sudo apt-get install -y libxcb-util1 zip imagemagick
+          mv FSModTool_Release.tar.gz FSModTool-${{ github.ref_name }}-linux-x86_64.tar.gz
+          #AppImage
+          convert KFModTool.ico[0] build_assets/FSModTool.png
           wget -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
           chmod a+x linuxdeployqt-continuous-x86_64.AppImage
-          echo -e "[Desktop Entry]\nType=Application\nName=FSModTool\nExec=FSModTool\nIcon=FSModTool\nCategories=Development;" > FSModTool.desktop
-          ./linuxdeployqt-continuous-x86_64.AppImage build_assets/FSModTool -appimage -unsupported-allow-new-glibc
-          
-          mv FSModTool-x86_64.AppImage FSModTool-linux-appimage.AppImage
-          zip FSModTool-${{ github.ref_name }}-linux-appimage.zip FSModTool-linux-appimage.AppImage
+          echo -e "[Desktop Entry]\nType=Application\nName=FSModTool\nExec=FSModTool\nIcon=FSModTool\nCategories=Development;" > build_assets/FSModTool.desktop
+          cd build_assets
+          ../linuxdeployqt-continuous-x86_64.AppImage FSModTool -appimage -unsupported-allow-new-glibc
+          cd ..
+          mv FSModTool-x86_64.AppImage FSModTool-${{ github.ref_name }}-x86_64.AppImage
+          zip FSModTool-${{ github.ref_name }}-x86_64-AppImage.zip FSModTool-${{ github.ref_name }}-x86_64.AppImage
 
       - name: Package macOS (mac64)
         if: runner.os == 'macOS'
         shell: bash
-        run: |
-          macdeployqt build_assets/FSModTool.app
-          zip -r FSModTool-${{ github.ref_name }}-macos-x86_64.zip build_assets/FSModTool.app
+        run: mv FSModTool_Release.zip FSModTool-${{ github.ref_name }}-macos-x86_64.zip
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: assets-${{ matrix.os }}
-          path: FSModTool-*.zip
+          path: |
+            FSModTool-*.zip
+            FSModTool-*.tar.gz
 
   create-release:
     needs: [build]
@@ -101,9 +112,8 @@ jobs:
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          # Uses the actual tag name you pushed
           automatic_release_tag: "${{ github.ref_name }}"
           prerelease: false
           title: "FSModTool ${{ github.ref_name }}"
           files: |
-            release_assets/FSModTool-*.zip
+            release_assets/FSModTool-*

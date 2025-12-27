@@ -195,6 +195,7 @@ DISTFILES += \
     unlitSimple.vert
 
 CONFIG(release, debug|release):win32 {
+    QMAKE_SH = 
     DIST_DIR = $$OUT_PWD/dist
     PACKAGE_FILE = $$OUT_PWD/../$${TARGET}_Release.zip
     EXE_NAME = $${TARGET}.exe

@@ -195,17 +195,33 @@ DISTFILES += \
     unlitSimple.vert
 
 CONFIG(release, debug|release):win32 {
+    # Check if we are in a GitHub Actions environment
+    # The GITHUB_ACTIONS environment variable is always set to "true" in GH Actions.
+    is_github_actions = $$(GITHUB_ACTIONS)
+
     DIST_DIR = $$OUT_PWD/dist
     PACKAGE_FILE = $$OUT_PWD/../$${TARGET}_Release.zip
     EXE_NAME = $${TARGET}.exe
     BUILD_PATH = $$OUT_PWD/release/$$EXE_NAME
     DIST_PATH = $$DIST_DIR/$$EXE_NAME
 
-    CLEAN_CMD  = if exist $$shell_quote($$shell_path($$DIST_DIR)) rmdir /s /q $$shell_quote($$shell_path($$DIST_DIR))
-    MKDIR_CMD  = mkdir $$shell_quote($$shell_path($$DIST_DIR))
-    COPY_CMD   = copy /y $$shell_quote($$shell_path($$BUILD_PATH)) $$shell_quote($$shell_path($$DIST_PATH))
-    DEPLOY_CMD = $$shell_quote($$shell_path($$[QT_INSTALL_BINS]/windeployqt.exe)) --compiler-runtime $$shell_quote($$shell_path($$DIST_PATH))
-    ZIP_CMD = cd /d $$shell_quote($$shell_path($$DIST_DIR)) && tar -a -cf $$shell_quote($$shell_path($$PACKAGE_FILE)) *
+    # Use bash-style commands for GitHub Actions
+    !isEmpty(is_github_actions) {
+        QMAKE_MAKE = mingw32-make
+        CLEAN_CMD  = rm -rf $$shell_quote($$shell_path($$DIST_DIR))
+        MKDIR_CMD  = mkdir -p $$shell_quote($$shell_path($$DIST_DIR))
+        COPY_CMD   = cp $$shell_quote($$shell_path($$BUILD_PATH)) $$shell_quote($$shell_path($$DIST_PATH))
+        DEPLOY_CMD = $$shell_quote($$shell_path($$[QT_INSTALL_BINS]/windeployqt.exe)) --compiler-runtime $$shell_quote($$shell_path($$DIST_PATH))
+        ZIP_CMD = cd $$shell_quote($$shell_path($$DIST_DIR)) && tar -a -cf $$shell_quote($$shell_path($$PACKAGE_FILE)) *
+    } else {
+        # Use cmd-style commands for local builds
+        QMAKE_MAKE = mingw32-make SHELL=cmd.exe
+        CLEAN_CMD  = if exist $$shell_quote($$shell_path($$DIST_DIR)) rmdir /s /q $$shell_quote($$shell_path($$DIST_DIR))
+        MKDIR_CMD  = mkdir $$shell_quote($$shell_path($$DIST_DIR))
+        COPY_CMD   = copy /y $$shell_quote($$shell_path($$BUILD_PATH)) $$shell_quote($$shell_path($$DIST_PATH))
+        DEPLOY_CMD = $$shell_quote($$shell_path($$[QT_INSTALL_BINS]/windeployqt.exe)) --compiler-runtime $$shell_quote($$shell_path($$DIST_PATH))
+        ZIP_CMD = cd /d $$shell_quote($$shell_path($$DIST_DIR)) && tar -a -cf $$shell_quote($$shell_path($$PACKAGE_FILE)) *
+    }
 
     QMAKE_POST_LINK = $$CLEAN_CMD && $$MKDIR_CMD && $$COPY_CMD && $$DEPLOY_CMD && $$ZIP_CMD
 }
